@@ -1,0 +1,45 @@
+name: BPŽ bannery
+
+on:
+  schedule:
+    # GitHub počítá v UTC: 5:30 UTC = 6:30 v zimě / 7:30 v létě, hotovo před 8:00
+    - cron: "30 5 * * *"
+  workflow_dispatch:        # tlačítko „Run workflow“ pro ruční spuštění
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  bannery:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Vygenerovat bannery a katalog
+        env:
+          VEREJNA_URL: ${{ steps.pages.outputs.base_url }}/bannery/
+        run: python3 bpz_bannery.py
+
+      - name: Připravit web
+        run: |
+          mkdir _site
+          cp -r bannery katalog.csv _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
